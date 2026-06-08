@@ -1,0 +1,24 @@
+{
+  "name": "mern-finance-tracker",
+  "version": "1.0.0",
+  "description": "Personal Finance Tracker built with MERN Stack",
+  "main": "server/server.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm start",
+    "client": "cd client && npm start",
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install",
+    "build": "cd client && npm run build"
+  },
+  "keywords": [
+    "finance",
+    "tracker",
+    "mern",
+    "budget"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}

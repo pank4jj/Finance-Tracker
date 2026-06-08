@@ -1,0 +1,132 @@
+# Authentication - Register
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Test User",
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+###
+
+# Authentication - Login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+###
+
+# Transactions - List
+GET {{baseUrl}}/api/transactions
+Authorization: Bearer {{authToken}}
+
+
+###
+
+# Transactions - Create
+POST {{baseUrl}}/api/transactions
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "type": "expense",
+  "category": "Groceries",
+  "amount": 42.75,
+  "description": "Weekly groceries",
+  "date": "2026-06-08T00:00:00.000Z"
+}
+
+###
+
+# Transactions - Update (replace :id)
+PUT {{baseUrl}}/api/transactions/{{transactionId}}
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "type": "expense",
+  "category": "Groceries",
+  "amount": 50.00,
+  "description": "Updated amount",
+  "date": "2026-06-08T00:00:00.000Z"
+}
+
+###
+
+# Transactions - Delete (replace :id)
+DELETE {{baseUrl}}/api/transactions/{{transactionId}}
+Authorization: Bearer {{authToken}}
+
+
+###
+
+# Budgets - List
+GET {{baseUrl}}/api/budgets
+Authorization: Bearer {{authToken}}
+
+
+###
+
+# Budgets - Create
+POST {{baseUrl}}/api/budgets
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "category": "Groceries",
+  "limit": 300,
+  "month": "2026-06"
+}
+
+###
+
+# Budgets - Update (replace :id)
+PUT {{baseUrl}}/api/budgets/{{budgetId}}
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "category": "Groceries",
+  "limit": 350,
+  "month": "2026-06"
+}
+
+###
+
+# Budgets - Delete (replace :id)
+DELETE {{baseUrl}}/api/budgets/{{budgetId}}
+Authorization: Bearer {{authToken}}
+
+
+###
+
+# Categories - List
+GET {{baseUrl}}/api/categories
+Authorization: Bearer {{authToken}}
+
+
+###
+
+# Categories - Create
+POST {{baseUrl}}/api/categories
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "name": "Groceries",
+  "type": "expense",
+  "icon": "🛒",
+  "color": "#FF6347"
+}
+
+###
+
+# Categories - Delete (replace :id)
+DELETE {{baseUrl}}/api/categories/{{categoryId}}
+Authorization: Bearer {{authToken}}
+
