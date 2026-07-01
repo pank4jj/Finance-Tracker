@@ -15,6 +15,7 @@ build/
 
 # REST Client environment file (may contain auth tokens)
 http-client.env.json
+api_requests.http
 
 # Windows OS artifacts
 Thumbs.db
