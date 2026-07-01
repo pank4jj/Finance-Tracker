@@ -26,152 +26,216 @@ ChartJS.register(
   Legend
 );
 
+/* ── Stat card ── */
+const StatCard = ({ label, value, sub, valueColor }) => (
+  <div className="card p-6">
+    <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-2">{label}</p>
+    <p className="text-2xl font-semibold text-ink" style={valueColor ? { color: valueColor } : {}}>
+      {value}
+    </p>
+    {sub && <p className="text-xs text-muted mt-1">{sub}</p>}
+  </div>
+);
+
 const EnhancedDashboard = () => {
   const { user } = useAuth();
   const { transactions, setTransactions, budgets, setBudgets } = useData();
-  const [monthlyData, setMonthlyData] = useState([]);
+  const [monthlyData, setMonthlyData]   = useState([]);
   const [categoryData, setCategoryData] = useState({});
 
-  useEffect(() => {
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
+  useEffect(() => { fetchData(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     calculateMonthlyData();
     calculateCategoryData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [transactions]);
+  }, [transactions]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchData = async () => {
     try {
-      const [txnResponse, budgetResponse] = await Promise.all([
+      const [txnRes, budgetRes] = await Promise.all([
         transactionService.getAll(),
         budgetService.getAll(),
       ]);
-      setTransactions(txnResponse.data || []);
-      setBudgets(budgetResponse.data || []);
-    } catch (error) {
-      console.error('Error fetching data:', error);
+      setTransactions(txnRes.data || []);
+      setBudgets(budgetRes.data || []);
+    } catch (err) {
+      console.error('Error fetching data:', err);
     }
   };
 
   const calculateMonthlyData = () => {
     const months = {};
-    const currentYear = new Date().getFullYear();
-
+    const year = new Date().getFullYear();
     for (let i = 0; i < 12; i++) {
-      const date = new Date(currentYear, i, 1);
-      const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-      months[monthKey] = { income: 0, expense: 0 };
+      const key = new Date(year, i, 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      months[key] = { income: 0, expense: 0 };
     }
-
-    transactions.forEach(txn => {
-      const date = new Date(txn.date);
-      const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-      if (months[monthKey]) {
-        if (txn.type === 'income') months[monthKey].income += txn.amount;
-        else months[monthKey].expense += txn.amount;
+    transactions.forEach((t) => {
+      const key = new Date(t.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      if (months[key]) {
+        if (t.type === 'income') months[key].income += t.amount;
+        else months[key].expense += t.amount;
       }
     });
-
-    const lastSixMonths = Object.entries(months)
-      .slice(-6)
-      .map(([month, data]) => ({ month, ...data }));
-
-    setMonthlyData(lastSixMonths);
+    setMonthlyData(Object.entries(months).slice(-6).map(([month, d]) => ({ month, ...d })));
   };
 
   const calculateCategoryData = () => {
-    const categories = {};
-    const colors = ['#7C3AED', '#06B6D4', '#F97316', '#F43F5E', '#60A5FA', '#F59E0B'];
-    let colorIndex = 0;
-
+    // Use Rausch-adjacent palette for pie slices
+    const palette = ['#ff385c', '#e00b41', '#ff6b85', '#ff9eb5', '#ffcbd8', '#3f3f3f'];
+    const cats = {};
+    let ci = 0;
     transactions
-      .filter(t => t.type === 'expense')
-      .forEach(txn => {
-        if (!categories[txn.category]) {
-          categories[txn.category] = { amount: 0, color: colors[colorIndex % colors.length] };
-          colorIndex++;
+      .filter((t) => t.type === 'expense')
+      .forEach((t) => {
+        if (!cats[t.category]) {
+          cats[t.category] = { amount: 0, color: palette[ci % palette.length] };
+          ci++;
         }
-        categories[txn.category].amount += txn.amount;
+        cats[t.category].amount += t.amount;
       });
-
-    setCategoryData(categories);
+    setCategoryData(cats);
   };
 
-  const totalIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-  const totalExpense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-  const balance = totalIncome - totalExpense;
+  const totalIncome  = transactions.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const totalExpense = transactions.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const balance      = totalIncome - totalExpense;
 
-  const chartData = {
-    labels: monthlyData.map(m => m.month),
+  /* Chart.js — light theme options */
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: { color: '#6a6a6a', font: { size: 12, family: 'Inter' }, boxWidth: 12, padding: 16 },
+      },
+    },
+    scales: {
+      x: { ticks: { color: '#6a6a6a', font: { size: 11 } }, grid: { color: '#ebebeb' } },
+      y: { ticks: { color: '#6a6a6a', font: { size: 11 } }, grid: { color: '#ebebeb' }, beginAtZero: true },
+    },
+  };
+
+  const pieOptions = {
+    responsive: true,
+    plugins: {
+      legend: { position: 'bottom', labels: { color: '#6a6a6a', font: { size: 12, family: 'Inter' }, boxWidth: 12, padding: 12 } },
+    },
+  };
+
+  const lineData = {
+    labels: monthlyData.map((m) => m.month),
     datasets: [
-      { label: 'Income', data: monthlyData.map(m => m.income), borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.08)', tension: 0.4 },
-      { label: 'Expense', data: monthlyData.map(m => m.expense), borderColor: '#EF4444', backgroundColor: 'rgba(239,68,68,0.08)', tension: 0.4 },
+      {
+        label: 'Income',
+        data: monthlyData.map((m) => m.income),
+        borderColor: '#10b981',
+        backgroundColor: 'rgba(16,185,129,0.06)',
+        tension: 0.4,
+        pointRadius: 4,
+        pointBackgroundColor: '#10b981',
+      },
+      {
+        label: 'Expense',
+        data: monthlyData.map((m) => m.expense),
+        borderColor: '#ff385c',
+        backgroundColor: 'rgba(255,56,92,0.06)',
+        tension: 0.4,
+        pointRadius: 4,
+        pointBackgroundColor: '#ff385c',
+      },
     ],
   };
 
   const pieData = {
     labels: Object.keys(categoryData),
-    datasets: [{ data: Object.values(categoryData).map(c => c.amount), backgroundColor: Object.values(categoryData).map(c => c.color), borderWidth: 2, borderColor: '#0b1220' }],
+    datasets: [{
+      data: Object.values(categoryData).map((c) => c.amount),
+      backgroundColor: Object.values(categoryData).map((c) => c.color),
+      borderWidth: 2,
+      borderColor: '#ffffff',
+    }],
   };
 
   return (
     <div className="py-6">
-      <h1 className="text-3xl md:text-4xl font-semibold mb-4">Welcome back, {user?.name}</h1>
+      {/* Page heading */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold text-ink">
+          Welcome back{user?.name ? `, ${user.name.split(' ')[0]}` : ''}
+        </h1>
+        <p className="text-sm text-muted mt-1">Here's your financial overview</p>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="glass rounded-xl p-6">
-          <h2 className="text-sm text-[color:var(--muted)] mb-2">Total Income</h2>
-          <p className="text-2xl font-bold text-green-400">${totalIncome.toFixed(2)}</p>
-          <p className="text-xs text-[color:var(--muted)] mt-2">All time income</p>
+      {/* ── Stat cards ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <StatCard
+          label="Total Income"
+          value={`$${totalIncome.toFixed(2)}`}
+          sub="All-time income"
+          valueColor="#10b981"
+        />
+        <StatCard
+          label="Net Balance"
+          value={`$${balance.toFixed(2)}`}
+          sub="Income minus expenses"
+          valueColor={balance >= 0 ? '#10b981' : '#ef4444'}
+        />
+        <StatCard
+          label="Total Expenses"
+          value={`$${totalExpense.toFixed(2)}`}
+          sub="All-time spending"
+          valueColor="#ef4444"
+        />
+      </div>
+
+      {/* ── Charts ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+        <div className="lg:col-span-2 card p-6">
+          <h2 className="text-sm font-semibold text-ink mb-4">Income vs Expenses — Last 6 Months</h2>
+          <Line data={lineData} options={chartOptions} />
         </div>
 
-        <div className="glass rounded-xl p-6">
-          <h2 className="text-sm text-[color:var(--muted)] mb-2">Balance</h2>
-          <p className={`text-2xl font-bold ${balance >= 0 ? 'text-primary-300' : 'text-red-400'}`}>${balance.toFixed(2)}</p>
-          <p className="text-xs text-[color:var(--muted)] mt-2">Income - Expense</p>
-        </div>
-
-        <div className="glass rounded-xl p-6">
-          <h2 className="text-sm text-[color:var(--muted)] mb-2">Total Expense</h2>
-          <p className="text-2xl font-bold text-red-400">${totalExpense.toFixed(2)}</p>
-          <p className="text-xs text-[color:var(--muted)] mt-2">All time expenses</p>
+        <div className="card p-6">
+          <h2 className="text-sm font-semibold text-ink mb-4">Spending by Category</h2>
+          {Object.keys(categoryData).length > 0
+            ? <Pie data={pieData} options={pieOptions} />
+            : <p className="text-sm text-muted">No expense data yet.</p>
+          }
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="lg:col-span-2 glass rounded-xl p-6">
-          <h2 className="text-lg font-semibold mb-4">Income vs Expense Trend</h2>
-          <Line data={chartData} options={{ responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }} />
-        </div>
-
-        <div className="glass rounded-xl p-6">
-          <h2 className="text-lg font-semibold mb-4">Expense by Category</h2>
-          {Object.keys(categoryData).length > 0 ? <Pie data={pieData} /> : <p className="text-[color:var(--muted)]">No expense data</p>}
-        </div>
-      </div>
-
+      {/* ── Budget overview ── */}
       {budgets.length > 0 && (
-        <div className="glass rounded-xl p-6 mb-8">
-          <h2 className="text-lg font-semibold mb-4">Budget Overview</h2>
+        <div className="card p-6 mb-8">
+          <h2 className="text-sm font-semibold text-ink mb-4">Budget Overview</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {budgets.map(budget => {
-              const spent = transactions.filter(t => t.type === 'expense' && t.category === budget.category).reduce((sum, t) => sum + t.amount, 0);
-              const percentage = (spent / budget.limit) * 100;
-              const isOverBudget = percentage > 100;
+            {budgets.map((budget) => {
+              const spent      = transactions.filter((t) => t.type === 'expense' && t.category === budget.category).reduce((s, t) => s + t.amount, 0);
+              const pct        = Math.min((spent / budget.limit) * 100, 100);
+              const isOver     = spent > budget.limit;
 
               return (
-                <div key={budget._id} className={`p-4 rounded-lg ${isOverBudget ? 'ring-1 ring-red-600/30' : 'ring-1 ring-green-600/20'}`}>
-                  <div className="flex justify-between mb-2">
-                    <span className="font-medium">{budget.category}</span>
-                    <span className={isOverBudget ? 'text-red-400 font-bold' : 'text-green-400'}>{percentage.toFixed(0)}%</span>
+                <div key={budget._id} className="p-4 rounded-md border border-hairline">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium text-ink">{budget.category}</span>
+                    <span className="text-xs font-semibold" style={{ color: isOver ? '#ef4444' : 'var(--muted)' }}>
+                      {pct.toFixed(0)}%
+                    </span>
                   </div>
-                  <div className="w-full bg-[rgba(255,255,255,0.03)] rounded-full h-2">
-                    <div className={`${isOverBudget ? 'bg-red-500' : 'bg-green-400'} h-2 rounded-full`} style={{ width: `${Math.min(percentage, 100)}%` }} />
+                  <div className="progress-track mb-2">
+                    <div
+                      className={isOver ? 'progress-fill-over' : 'progress-fill-ok'}
+                      style={{ width: `${pct}%` }}
+                    />
                   </div>
-                  <p className="text-xs text-[color:var(--muted)] mt-2">${spent.toFixed(2)} of ${budget.limit.toFixed(2)}</p>
+                  <p className="text-xs text-muted">
+                    ${spent.toFixed(2)} <span className="text-hairline-soft">of</span> ${budget.limit.toFixed(2)}
+                    {isOver && (
+                      <span className="ml-2 text-red-500 font-medium">
+                        ↑ ${(spent - budget.limit).toFixed(2)} over
+                      </span>
+                    )}
+                  </p>
                 </div>
               );
             })}
@@ -179,33 +243,46 @@ const EnhancedDashboard = () => {
         </div>
       )}
 
-      <div className="glass rounded-xl">
-        <div className="p-6 border-b border-[rgba(255,255,255,0.03)]">
-          <h2 className="text-lg font-semibold">Recent Transactions</h2>
+      {/* ── Recent transactions ── */}
+      <div className="card overflow-hidden">
+        <div className="px-6 py-4 border-b border-hairline">
+          <h2 className="text-sm font-semibold text-ink">Recent Transactions</h2>
         </div>
-        <div className="overflow-x-auto p-4">
+        <div className="overflow-x-auto">
           <table className="w-full table-auto">
             <thead>
-              <tr className="text-[color:var(--muted)] text-xs">
-                <th className="px-4 py-3 text-left">Date</th>
-                <th className="px-4 py-3 text-left">Category</th>
-                <th className="px-4 py-3 text-left">Description</th>
-                <th className="px-4 py-3 text-left">Type</th>
-                <th className="px-4 py-3 text-left">Amount</th>
+              <tr className="border-b border-hairline">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wide">Date</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wide">Category</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wide">Description</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wide">Type</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wide">Amount</th>
               </tr>
             </thead>
             <tbody>
-              {transactions.slice(0, 8).map(transaction => (
-                <tr key={transaction._id} className="hover:bg-[rgba(255,255,255,0.02)] transition">
-                  <td className="px-4 py-3 text-sm">{new Date(transaction.date).toLocaleDateString()}</td>
-                  <td className="px-4 py-3 text-sm">{transaction.category}</td>
-                  <td className="px-4 py-3 text-sm">{transaction.description}</td>
-                  <td className="px-4 py-3 text-sm"><span className={`px-2 py-1 rounded text-xs font-medium ${transaction.type === 'income' ? 'bg-green-800/20 text-green-300' : 'bg-red-800/20 text-red-300'}`}>{transaction.type}</span></td>
-                  <td className="px-4 py-3 text-sm font-medium">${transaction.amount.toFixed(2)}</td>
+              {transactions.slice(0, 8).map((t) => (
+                <tr key={t._id} className="border-b border-hairline-soft hover:bg-surface-soft transition-colors">
+                  <td className="px-6 py-3 text-sm text-muted">{new Date(t.date).toLocaleDateString()}</td>
+                  <td className="px-6 py-3 text-sm font-medium text-ink">{t.category}</td>
+                  <td className="px-6 py-3 text-sm text-ink-body">{t.description}</td>
+                  <td className="px-6 py-3">
+                    <span className={t.type === 'income' ? 'badge-income' : 'badge-expense'}>
+                      {t.type}
+                    </span>
+                  </td>
+                  <td className="px-6 py-3 text-sm font-semibold" style={{ color: t.type === 'income' ? '#10b981' : '#ef4444' }}>
+                    {t.type === 'income' ? '+' : '−'}${t.amount.toFixed(2)}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
+
+          {transactions.length === 0 && (
+            <div className="py-12 text-center">
+              <p className="text-sm text-muted">No transactions yet. Add one to get started.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

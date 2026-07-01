@@ -59,6 +59,24 @@ export const budgetService = {
     }),
 };
 
+// Profile API calls
+export const profileService = {
+  get: () =>
+    axios.get(`${API_URL}/profile`, {
+      headers: { Authorization: `Bearer ${getAuthToken()}` },
+    }),
+
+  update: (profileData) =>
+    axios.put(`${API_URL}/profile`, profileData, {
+      headers: { Authorization: `Bearer ${getAuthToken()}` },
+    }),
+
+  changePassword: (currentPassword, newPassword) =>
+    axios.put(`${API_URL}/profile/password`, { currentPassword, newPassword }, {
+      headers: { Authorization: `Bearer ${getAuthToken()}` },
+    }),
+};
+
 // Category API calls
 export const categoryService = {
   getAll: () =>

@@ -11,3 +11,11 @@ dist/
 build/
 .vscode/
 .idea/
+
+# REST Client environment file (may contain auth tokens)
+http-client.env.json
+
+# Windows OS artifacts
+Thumbs.db
+ehthumbs.db
+Desktop.ini

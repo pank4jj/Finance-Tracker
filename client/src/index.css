@@ -2,51 +2,341 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Inter — closest open-source match to Airbnb Cereal VF */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Manrope:wght@300;400;600;700;800&display=swap');
-
-:root{
-  --bg: #0f1724; /* deep neutral */
-  --muted: #94a3b8;
-  --card: rgba(255,255,255,0.03);
+/* ─── Airbnb design tokens — LIGHT MODE ─── */
+:root {
+  --rausch: #ff385c;
+  --rausch-active: #e00b41;
+  --rausch-disabled: #ffd1da;
+  --ink: #222222;
+  --ink-body: #3f3f3f;
+  --muted: #6a6a6a;
+  --muted-soft: #929292;
+  --hairline: #dddddd;
+  --hairline-soft: #ebebeb;
+  --border-strong: #c1c1c1;
+  --canvas: #ffffff;
+  --surface-soft: #f7f7f7;
+  --surface-strong: #f2f2f2;
+  --shadow-airbnb: rgba(0,0,0,0.02) 0 0 0 1px, rgba(0,0,0,0.04) 0 2px 6px 0, rgba(0,0,0,0.10) 0 4px 8px 0;
+  --shadow-card: rgba(0,0,0,0.02) 0 0 0 1px, rgba(0,0,0,0.04) 0 2px 6px 0;
 }
 
+/* ─── DARK MODE overrides ─── */
+.dark {
+  --ink: #f1f1f1;
+  --ink-body: #d4d4d4;
+  --muted: #a0a0a0;
+  --muted-soft: #787878;
+  --hairline: #3a3a3a;
+  --hairline-soft: #2e2e2e;
+  --border-strong: #555555;
+  --canvas: #1a1a1a;
+  --surface-soft: #242424;
+  --surface-strong: #2d2d2d;
+  --shadow-airbnb: rgba(0,0,0,0.4) 0 0 0 1px, rgba(0,0,0,0.3) 0 2px 6px 0, rgba(0,0,0,0.5) 0 4px 8px 0;
+  --shadow-card: rgba(0,0,0,0.3) 0 0 0 1px, rgba(0,0,0,0.2) 0 2px 6px 0;
+}
+
+/* ─── Base ─── */
 body {
-  font-family: Inter, Manrope, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  font-family: 'Inter', -apple-system, system-ui, Roboto, 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(180deg,#071025 0%, #081021 100%);
-  color: #e6eef8;
+  background: var(--canvas);
+  color: var(--ink);
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
-.glass {
-  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255,255,255,0.04);
-}
-
+/* ─── Layout ─── */
 .container-max {
-  max-width: 1200px;
+  max-width: 1280px;
   margin-left: auto;
   margin-right: auto;
   padding-left: 1rem;
   padding-right: 1rem;
 }
 
-.floating-card {
-  background: var(--card);
-  border-radius: 12px;
-  padding: 1.25rem;
-  box-shadow: 0 10px 30px rgba(2,6,23,0.5);
+/* ─── Card surfaces ─── */
+.card {
+  background: var(--canvas);
+  border-radius: 14px;
+  border: 1px solid var(--hairline);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.card-elevated {
+  background: var(--canvas);
+  border-radius: 14px;
+  box-shadow: var(--shadow-airbnb);
+  transition: background 0.2s ease;
+}
+
+/* ─── Input ─── */
+.airbnb-input {
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  padding: 14px 12px;
+  height: 56px;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ink);
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s ease, border-width 0.15s ease, background 0.2s ease, color 0.2s ease;
+  font-family: inherit;
+}
+
+.airbnb-input:focus {
+  border-width: 2px;
+  border-color: var(--ink);
+}
+
+.airbnb-input::placeholder {
+  color: var(--muted);
+}
+
+/* Select variant */
+.airbnb-select {
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  padding: 14px 12px;
+  height: 56px;
+  font-size: 16px;
+  color: var(--ink);
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.2s ease, color 0.2s ease;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.airbnb-select:focus {
+  border-width: 2px;
+  border-color: var(--ink);
+}
+
+/* ─── Buttons ─── */
+.btn-primary {
+  background: var(--rausch);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.25;
+  border-radius: 8px;
+  padding: 0 24px;
+  height: 48px;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s ease;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.btn-primary:hover { background: var(--rausch-active); }
+.btn-primary:disabled { background: var(--rausch-disabled); cursor: not-allowed; }
+
+.btn-secondary {
+  background: var(--canvas);
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.25;
+  border-radius: 8px;
+  padding: 0 23px;
+  height: 48px;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 1px solid var(--ink);
+  transition: background 0.15s ease, color 0.2s ease, border-color 0.2s ease;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.btn-secondary:hover { background: var(--surface-soft); }
+
+.btn-tertiary {
+  background: transparent;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  font-family: inherit;
+  padding: 0;
+}
+
+.btn-danger {
+  background: #e00b41;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: 8px;
+  padding: 0 24px;
+  height: 48px;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+}
+
+.btn-danger:hover { background: #b32505; }
+
+/* ─── Sidebar nav link ─── */
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+  transition: background 0.12s ease, color 0.12s ease;
+  margin-bottom: 4px;
+}
+
+.sidebar-link:hover {
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+
+.sidebar-link.active {
+  background: #fff0f2;
+  color: var(--rausch);
+  font-weight: 600;
+}
+
+.dark .sidebar-link.active {
+  background: #3a1520;
+  color: var(--rausch);
+}
+
+/* ─── Progress bar ─── */
+.progress-track {
+  width: 100%;
+  height: 4px;
+  background: var(--surface-strong);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.progress-fill-ok {
+  height: 100%;
+  border-radius: 9999px;
+  background: var(--rausch);
+  transition: width 0.4s ease;
+}
+
+.progress-fill-over {
+  height: 100%;
+  border-radius: 9999px;
+  background: #ef4444;
+  transition: width 0.4s ease;
+}
+
+/* ─── Badge pill ─── */
+.badge-income {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-expense {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Dark mode badge overrides */
+.dark .badge-income {
+  background: #14532d;
+  color: #86efac;
+}
+
+.dark .badge-expense {
+  background: #450a0a;
+  color: #fca5a5;
+}
+
+/* ─── Dark mode table hover ─── */
+.dark .hover\:bg-surface-soft:hover {
+  background: var(--surface-soft);
+}
+
+/* ─── Dark mode Tailwind class overrides ─── */
+/* These override the hardcoded Tailwind color values so named classes work in dark mode */
+.dark .text-ink         { color: var(--ink) !important; }
+.dark .text-ink-body    { color: var(--ink-body) !important; }
+.dark .text-muted       { color: var(--muted) !important; }
+.dark .text-muted-soft  { color: var(--muted-soft) !important; }
+.dark .bg-canvas        { background-color: var(--canvas) !important; }
+.dark .bg-surface-soft  { background-color: var(--surface-soft) !important; }
+.dark .bg-surface-strong { background-color: var(--surface-strong) !important; }
+.dark .border-hairline  { border-color: var(--hairline) !important; }
+.dark .border-hairline-soft { border-color: var(--hairline-soft) !important; }
+.dark .hover\:bg-surface-soft:hover { background-color: var(--surface-soft) !important; }
+
+/* Card backgrounds in dark mode */
+.dark .card             { background: var(--canvas); border-color: var(--hairline); }
+.dark .card-elevated    { background: var(--canvas); }
+
+/* ─── Theme toggle switch ─── */
+.theme-toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 9999px;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.theme-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: left 0.2s ease;
 }

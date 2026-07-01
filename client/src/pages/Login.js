@@ -1,79 +1,101 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { authService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [error, setError]       = useState('');
+  const [loading, setLoading]   = useState(false);
   const { login } = useAuth();
-  const navigate = useNavigate();
+  const navigate  = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-
     try {
       const response = await authService.login(email, password);
       login(response.data.user, response.data.token);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed');
+      setError(err.response?.data?.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{background: 'linear-gradient(180deg,#071025 0%, #081021 100%)'}}>
-      <div className="w-full max-w-md glass floating-card">
-        <h1 className="text-2xl font-semibold mb-6">Welcome back</h1>
+    /* White canvas page — center the form card */
+    <div className="min-h-screen bg-canvas flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
 
-        {error && (
-          <div className="bg-red-600 bg-opacity-20 border border-red-500 text-red-200 px-4 py-3 rounded mb-4">
-            {error}
-          </div>
-        )}
+        {/* Brand */}
+        <div className="mb-8 text-center">
+          <h1 className="text-2xl font-semibold text-ink">
+            Finance<span style={{ color: 'var(--rausch)' }}>.</span>
+          </h1>
+        </div>
 
-        <form onSubmit={handleLogin}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-[color:var(--muted)] mb-2">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-md bg-transparent border border-[rgba(255,255,255,0.04)] focus:border-primary-500 outline-none"
-              required
-            />
-          </div>
+        {/* Card — 14px radius, hairline border, Airbnb shadow */}
+        <div className="card-elevated p-8">
+          <h2 className="text-xl font-semibold text-ink mb-1">Welcome back</h2>
+          <p className="text-sm text-muted mb-6">Sign in to your account</p>
 
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-[color:var(--muted)] mb-2">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-md bg-transparent border border-[rgba(255,255,255,0.04)] focus:border-primary-500 outline-none"
-              required
-            />
-          </div>
+          {error && (
+            <div
+              className="mb-4 px-4 py-3 rounded-sm text-sm"
+              style={{ background: '#fff0f0', border: '1px solid var(--rausch)', color: 'var(--error-text, #c13515)' }}
+            >
+              {error}
+            </div>
+          )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 rounded-md bg-gradient-to-r from-primary-500 to-primary-600 text-white font-medium hover:opacity-95 disabled:opacity-50"
-          >
-            {loading ? 'Logging in...' : 'Sign in'}
-          </button>
-        </form>
+          <form onSubmit={handleLogin}>
+            {/* Email */}
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-ink mb-1.5 uppercase tracking-wide">
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="airbnb-input"
+                required
+              />
+            </div>
 
-        <p className="text-center text-[color:var(--muted)] text-sm mt-6">
-          Don't have an account?{' '}
-          <a href="/register" className="text-primary-300 hover:underline font-medium">Create one</a>
-        </p>
+            {/* Password */}
+            <div className="mb-6">
+              <label className="block text-xs font-semibold text-ink mb-1.5 uppercase tracking-wide">
+                Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="airbnb-input"
+                required
+              />
+            </div>
+
+            <button type="submit" disabled={loading} className="btn-primary w-full">
+              {loading ? 'Signing in…' : 'Sign in'}
+            </button>
+          </form>
+
+          <p className="text-sm text-muted text-center mt-6">
+            Don't have an account?{' '}
+            <Link to="/register" className="text-ink font-medium underline hover:no-underline">
+              Create one
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

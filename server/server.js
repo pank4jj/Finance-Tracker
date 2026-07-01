@@ -29,6 +29,7 @@ const startServer = async () => {
     app.use('/api/transactions', require('./routes/transactions'));
     app.use('/api/budgets', require('./routes/budgets'));
     app.use('/api/categories', require('./routes/categories'));
+    app.use('/api/profile', require('./routes/profile'));
 
     // Root route - quick health/info endpoint
     app.get('/', (req, res) => {

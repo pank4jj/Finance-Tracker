@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { DataProvider } from './context/DataContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
@@ -41,7 +42,7 @@ function AppContent() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        
+
         <Route
           path="/dashboard"
           element={
@@ -52,7 +53,7 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/transactions"
           element={
@@ -63,7 +64,7 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/budgets"
           element={
@@ -74,7 +75,7 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/categories"
           element={
@@ -85,7 +86,7 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/profile"
           element={
@@ -96,7 +97,7 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
-        
+
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Router>
@@ -105,8 +106,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

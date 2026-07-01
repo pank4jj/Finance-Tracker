@@ -3,48 +3,52 @@ import { categoryService } from '../services/api';
 import { useData } from '../context/DataContext';
 
 const EMOJI_ICONS = ['💰', '🍔', '🏠', '🚗', '🎓', '🏥', '🎬', '✈️', '👕', '💪'];
-const COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2', '#F8B195', '#FF6B9D'];
+const COLORS = ['#ff385c', '#e00b41', '#ff6b85', '#f97316', '#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ec4899', '#14b8a6'];
+
+const CategoryPill = ({ label }) => (
+  <span
+    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold"
+    style={{
+      background: label === 'expense' ? '#fee2e2' : '#dcfce7',
+      color: label === 'expense' ? '#991b1b' : '#166534',
+    }}
+  >
+    {label}
+  </span>
+);
 
 const Categories = () => {
   const { categories, setCategories } = useData();
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({
+  const [showForm, setShowForm]       = useState(false);
+  const [loading, setLoading]         = useState(false);
+  const [formData, setFormData]       = useState({
     name: '',
     type: 'expense',
     icon: EMOJI_ICONS[0],
     color: COLORS[0],
   });
-  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
+  useEffect(() => { fetchCategories(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchCategories = async () => {
     try {
-      const response = await categoryService.getAll();
-      setCategories(response.data);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
+      const res = await categoryService.getAll();
+      setCategories(res.data);
+    } catch (err) {
+      console.error(err);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      const response = await categoryService.create(formData);
-      setCategories([response.data, ...categories]);
-      setFormData({
-        name: '',
-        type: 'expense',
-        icon: EMOJI_ICONS[0],
-        color: COLORS[0],
-      });
+      const res = await categoryService.create(formData);
+      setCategories([res.data, ...categories]);
+      setFormData({ name: '', type: 'expense', icon: EMOJI_ICONS[0], color: COLORS[0] });
       setShowForm(false);
-    } catch (error) {
-      console.error('Error creating category:', error);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -53,166 +57,159 @@ const Categories = () => {
   const handleDelete = async (id) => {
     try {
       await categoryService.delete(id);
-      setCategories(categories.filter(c => c._id !== id));
-    } catch (error) {
-      console.error('Error deleting category:', error);
+      setCategories(categories.filter((c) => c._id !== id));
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  const expenseCategories = categories.filter(c => c.type === 'expense');
-  const incomeCategories = categories.filter(c => c.type === 'income');
+  const expenseCategories = categories.filter((c) => c.type === 'expense');
+  const incomeCategories  = categories.filter((c) => c.type === 'income');
 
-  return (
-    <div className="min-h-screen p-3 md:p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
-          <h1 className="text-3xl font-semibold text-[color:var(--muted)]">Manage Categories</h1>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="bg-primary-500 text-white px-4 py-2 rounded-lg hover:brightness-110"
+  const CategoryGrid = ({ items }) => (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+      {items.map((cat) => (
+        <div key={cat._id} className="card p-4 flex items-center gap-3 group">
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0"
+            style={{ background: cat.color + '22' }}
           >
-            {showForm ? 'Cancel' : 'Add Category'}
+            {cat.icon}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate" style={{ color: 'var(--ink)' }}>{cat.name}</p>
+            <CategoryPill label={cat.type} />
+          </div>
+          <button
+            onClick={() => handleDelete(cat._id)}
+            className="transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+            style={{ color: 'var(--muted-soft)' }}
+            onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
+            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--muted-soft)'}
+            aria-label={`Delete ${cat.name}`}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
           </button>
         </div>
+      ))}
+    </div>
+  );
 
-        {showForm && (
-          <div className="glass rounded-xl p-4 mb-6">
-            <form onSubmit={handleSubmit}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                <div>
-                  <label className="block text-gray-700 text-sm font-medium mb-2">
-                    Category Name
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g., Groceries, Netflix"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
+  return (
+    <div className="py-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl font-semibold" style={{ color: 'var(--ink)' }}>Categories</h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>{categories.length} categories</p>
+        </div>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className={showForm ? 'btn-secondary' : 'btn-primary'}
+        >
+          {showForm ? 'Discard' : '+ Add Category'}
+        </button>
+      </div>
 
-                <div>
-                  <label className="block text-gray-700 text-sm font-medium mb-2">Type</label>
-                  <select
-                    value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="expense">Expense</option>
-                    <option value="income">Income</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-gray-700 text-sm font-medium mb-2">Icon</label>
-                  <select
-                    value={formData.icon}
-                    onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-xl"
-                  >
-                    {EMOJI_ICONS.map(icon => (
-                      <option key={icon} value={icon}>
-                        {icon}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-gray-700 text-sm font-medium mb-2">Color</label>
-                  <div className="flex gap-2 flex-wrap">
-                    {COLORS.map(color => (
-                      <button
-                        key={color}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, color })}
-                        className={`w-10 h-10 rounded-lg border-2 ${
-                          formData.color === color ? 'border-gray-800' : 'border-gray-300'
-                        }`}
-                        style={{ backgroundColor: color }}
-                      ></button>
-                    ))}
-                  </div>
+      {/* Form */}
+      {showForm && (
+        <div className="card p-6 mb-6">
+          <h2 className="text-base font-semibold mb-4" style={{ color: 'var(--ink)' }}>New Category</h2>
+          <form onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'var(--muted)' }}>Name</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="e.g. Groceries, Netflix"
+                  className="airbnb-input"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'var(--muted)' }}>Type</label>
+                <select
+                  value={formData.type}
+                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                  className="airbnb-select"
+                >
+                  <option value="expense">Expense</option>
+                  <option value="income">Income</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'var(--muted)' }}>Icon</label>
+                <select
+                  value={formData.icon}
+                  onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+                  className="airbnb-select text-xl"
+                >
+                  {EMOJI_ICONS.map((ic) => <option key={ic} value={ic}>{ic}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'var(--muted)' }}>Color</label>
+                <div className="flex gap-2 flex-wrap pt-1">
+                  {COLORS.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, color })}
+                      className="w-8 h-8 rounded-full border-2 transition-transform hover:scale-110"
+                      style={{
+                        backgroundColor: color,
+                        borderColor: formData.color === color ? 'var(--ink)' : 'transparent',
+                        outline: formData.color === color ? '2px solid var(--canvas)' : 'none',
+                        outlineOffset: '-2px',
+                      }}
+                    />
+                  ))}
                 </div>
               </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-blue-500 text-white py-2 rounded-lg font-medium hover:bg-blue-600 disabled:opacity-50"
-              >
-                {loading ? 'Creating...' : 'Add Category'}
+            </div>
+            <div className="flex gap-3">
+              <button type="submit" disabled={loading} className="btn-primary flex-1">
+                {loading ? 'Adding…' : 'Add Category'}
               </button>
-            </form>
-          </div>
-        )}
-
-        {/* Expense Categories */}
-        {expenseCategories.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Expense Categories</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {expenseCategories.map(cat => (
-                <div
-                  key={cat._id}
-                  className="glass rounded-lg p-3 hover:shadow-lg transition"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-2xl md:text-3xl" style={{ backgroundColor: 'transparent' }}>{cat.icon}</span>
-                    <button
-                      onClick={() => handleDelete(cat._id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <p className="font-medium text-[color:var(--muted)]">{cat.name}</p>
-                </div>
-              ))}
+              <button type="button" onClick={() => setShowForm(false)} className="btn-secondary">
+                Cancel
+              </button>
             </div>
-          </div>
-        )}
+          </form>
+        </div>
+      )}
 
-        {/* Income Categories */}
-        {incomeCategories.length > 0 && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Income Categories</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {incomeCategories.map(cat => (
-                  <div
-                    key={cat._id}
-                    className="glass rounded-lg p-3 hover:shadow-lg transition"
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="text-2xl md:text-3xl" style={{ backgroundColor: 'transparent' }}>{cat.icon}</span>
-                      <button
-                        onClick={() => handleDelete(cat._id)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                    <p className="font-medium text-[color:var(--muted)]">{cat.name}</p>
-                  </div>
-              ))}
-            </div>
-          </div>
-        )}
+      {/* Expense categories */}
+      {expenseCategories.length > 0 && (
+        <section className="mb-8">
+          <h2 className="text-sm font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--muted)' }}>Expense</h2>
+          <CategoryGrid items={expenseCategories} />
+        </section>
+      )}
 
-        {categories.length === 0 && !showForm && (
-          <div className="text-center py-12">
-            <p className="text-gray-600 text-lg">No categories created yet</p>
-            <button
-              onClick={() => setShowForm(true)}
-              className="mt-4 bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600"
-            >
-              Create Your First Category
-            </button>
-          </div>
-        )}
-      </div>
+      {/* Income categories */}
+      {incomeCategories.length > 0 && (
+        <section>
+          <h2 className="text-sm font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--muted)' }}>Income</h2>
+          <CategoryGrid items={incomeCategories} />
+        </section>
+      )}
+
+      {/* Empty state */}
+      {categories.length === 0 && !showForm && (
+        <div className="card py-16 text-center">
+          <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
+            No categories yet. Add one to organize your transactions.
+          </p>
+          <button onClick={() => setShowForm(true)} className="btn-primary">
+            Add your first category
+          </button>
+        </div>
+      )}
     </div>
   );
 };

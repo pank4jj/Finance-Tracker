@@ -57,5 +57,10 @@ MERN/
 ├── package.json           # Root package.json
 └── README.md             # This file
 ```
+npm run dev           # Start both client and server
+npm run server        # Start backend only
+npm run client        # Start frontend only
+npm run build         # Build React production bundle
+npm install-all       # Install all dependencies
 
 Happy tracking! 💰

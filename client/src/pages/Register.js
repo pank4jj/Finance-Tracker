@@ -1,104 +1,129 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { authService } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
 const Register = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [name, setName]                     = useState('');
+  const [email, setEmail]                   = useState('');
+  const [password, setPassword]             = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [error, setError]                   = useState('');
+  const [loading, setLoading]               = useState(false);
   const navigate = useNavigate();
 
   const handleRegister = async (e) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError('Passwords do not match.');
       return;
     }
-
     setLoading(true);
     setError('');
     try {
       await authService.register(name, email, password);
       navigate('/login');
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed');
+      setError(err.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{background: 'linear-gradient(180deg,#071025 0%, #081021 100%)'}}>
-      <div className="w-full max-w-md glass floating-card">
-        <h1 className="text-2xl font-semibold mb-6">Create your account</h1>
+    <div className="min-h-screen bg-canvas flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md">
 
-        {error && (
-          <div className="bg-red-600 bg-opacity-20 border border-red-500 text-red-200 px-4 py-3 rounded mb-4">
-            {error}
-          </div>
-        )}
+        {/* Brand */}
+        <div className="mb-8 text-center">
+          <h1 className="text-2xl font-semibold text-ink">
+            Finance<span style={{ color: 'var(--rausch)' }}>.</span>
+          </h1>
+        </div>
 
-        <form onSubmit={handleRegister}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-[color:var(--muted)] mb-2">Full name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 rounded-md bg-transparent border border-[rgba(255,255,255,0.04)] focus:border-primary-500 outline-none"
-              required
-            />
-          </div>
+        {/* Card */}
+        <div className="card-elevated p-8">
+          <h2 className="text-xl font-semibold text-ink mb-1">Create your account</h2>
+          <p className="text-sm text-muted mb-6">Track your finances in minutes</p>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-[color:var(--muted)] mb-2">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-md bg-transparent border border-[rgba(255,255,255,0.04)] focus:border-primary-500 outline-none"
-              required
-            />
-          </div>
+          {error && (
+            <div
+              className="mb-4 px-4 py-3 rounded-sm text-sm"
+              style={{ background: '#fff0f0', border: '1px solid var(--rausch)', color: '#c13515' }}
+            >
+              {error}
+            </div>
+          )}
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-[color:var(--muted)] mb-2">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-md bg-transparent border border-[rgba(255,255,255,0.04)] focus:border-primary-500 outline-none"
-              required
-            />
-          </div>
+          <form onSubmit={handleRegister}>
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-ink mb-1.5 uppercase tracking-wide">
+                Full name
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Jane Smith"
+                className="airbnb-input"
+                required
+              />
+            </div>
 
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-[color:var(--muted)] mb-2">Confirm password</label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-md bg-transparent border border-[rgba(255,255,255,0.04)] focus:border-primary-500 outline-none"
-              required
-            />
-          </div>
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-ink mb-1.5 uppercase tracking-wide">
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="airbnb-input"
+                required
+              />
+            </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 rounded-md bg-gradient-to-r from-primary-500 to-primary-600 text-white font-medium hover:opacity-95 disabled:opacity-50"
-          >
-            {loading ? 'Creating account...' : 'Create account'}
-          </button>
-        </form>
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-ink mb-1.5 uppercase tracking-wide">
+                Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="airbnb-input"
+                required
+              />
+            </div>
 
-        <p className="text-center text-[color:var(--muted)] text-sm mt-6">
-          Already have an account?{' '}
-          <a href="/login" className="text-primary-300 hover:underline font-medium">Sign in</a>
-        </p>
+            <div className="mb-6">
+              <label className="block text-xs font-semibold text-ink mb-1.5 uppercase tracking-wide">
+                Confirm password
+              </label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                className="airbnb-input"
+                required
+              />
+            </div>
+
+            <button type="submit" disabled={loading} className="btn-primary w-full">
+              {loading ? 'Creating account…' : 'Create account'}
+            </button>
+          </form>
+
+          <p className="text-sm text-muted text-center mt-6">
+            Already have an account?{' '}
+            <Link to="/login" className="text-ink font-medium underline hover:no-underline">
+              Sign in
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

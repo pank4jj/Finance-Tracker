@@ -1,300 +1,356 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
-import { transactionService } from '../services/api';
+import { transactionService, categoryService } from '../services/api';
+
+// Fallback built-in categories (used only when user has no custom ones)
+const BUILTIN_CATEGORIES = [
+  'Food', 'Housing', 'Transport', 'Health', 'Education',
+  'Entertainment', 'Shopping', 'Travel', 'Salary', 'Freelance', 'Other',
+];
 
 const TransactionsPage = () => {
-  const { user } = useAuth();
-  const { transactions, setTransactions, addTransaction, updateTransaction, deleteTransaction } = useData();
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState(null);
+  const {
+    transactions, setTransactions,
+    addTransaction, updateTransaction, deleteTransaction,
+    categories, setCategories,
+  } = useData();
+
+  const [showForm, setShowForm]     = useState(false);
+  const [editingId, setEditingId]   = useState(null);
   const [filterType, setFilterType] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [formData, setFormData] = useState({
+  const [loading, setLoading]       = useState(false);
+
+  // Merge user categories with builtins — user categories take precedence
+  const userCategoryNames = categories.map((c) => c.name);
+  const allCategories = userCategoryNames.length > 0
+    ? userCategoryNames
+    : BUILTIN_CATEGORIES;
+
+  const emptyForm = {
     type: 'expense',
-    category: 'Food',
+    category: allCategories[0] || '',
     amount: '',
     description: '',
     date: new Date().toISOString().split('T')[0],
-  });
-  const [loading, setLoading] = useState(false);
+  };
+
+  const [formData, setFormData] = useState(emptyForm);
 
   useEffect(() => {
     fetchTransactions();
-  }, []);
+    fetchCategories();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When categories load, update the default form category if it hasn't been touched
+  useEffect(() => {
+    if (categories.length > 0 && !editingId) {
+      setFormData((prev) => ({
+        ...prev,
+        category: prev.category || categories[0].name,
+      }));
+    }
+  }, [categories]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchTransactions = async () => {
     try {
-      const response = await transactionService.getAll();
-      setTransactions(response.data);
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
+      const res = await transactionService.getAll();
+      setTransactions(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const res = await categoryService.getAll();
+      setCategories(res.data);
+    } catch (err) {
+      console.error(err);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
+      const payload = { ...formData, amount: parseFloat(formData.amount) };
       if (editingId) {
-        const response = await transactionService.update(editingId, {
-          ...formData,
-          amount: parseFloat(formData.amount),
-        });
-        updateTransaction(editingId, response.data);
+        const res = await transactionService.update(editingId, payload);
+        updateTransaction(editingId, res.data);
         setEditingId(null);
       } else {
-        const response = await transactionService.create({
-          ...formData,
-          amount: parseFloat(formData.amount),
-        });
-        addTransaction(response.data);
+        const res = await transactionService.create(payload);
+        addTransaction(res.data);
       }
-      
-      setFormData({
-        type: 'expense',
-        category: 'Food',
-        amount: '',
-        description: '',
-        date: new Date().toISOString().split('T')[0],
-      });
+      setFormData({ ...emptyForm, category: allCategories[0] || '' });
       setShowForm(false);
-    } catch (error) {
-      console.error('Error:', error);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEdit = (transaction) => {
+  const handleEdit = (t) => {
     setFormData({
-      type: transaction.type,
-      category: transaction.category,
-      amount: transaction.amount.toString(),
-      description: transaction.description,
-      date: new Date(transaction.date).toISOString().split('T')[0],
+      type: t.type,
+      category: t.category,
+      amount: t.amount.toString(),
+      description: t.description,
+      date: new Date(t.date).toISOString().split('T')[0],
     });
-    setEditingId(transaction._id);
+    setEditingId(t._id);
     setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDelete = async (id) => {
     try {
       await transactionService.delete(id);
       deleteTransaction(id);
-    } catch (error) {
-      console.error('Error deleting transaction:', error);
+    } catch (err) {
+      console.error(err);
     }
   };
 
   const handleCancel = () => {
     setShowForm(false);
     setEditingId(null);
-    setFormData({
-      type: 'expense',
-      category: 'Food',
-      amount: '',
-      description: '',
-      date: new Date().toISOString().split('T')[0],
-    });
+    setFormData({ ...emptyForm, category: allCategories[0] || '' });
   };
 
-  const filteredTransactions = transactions.filter(txn => {
-    const typeMatch = filterType === 'all' || txn.type === filterType;
-    const searchMatch = 
-      txn.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      txn.description.toLowerCase().includes(searchTerm.toLowerCase());
-    return typeMatch && searchMatch;
+  const filtered = transactions.filter((t) => {
+    const typeOk   = filterType === 'all' || t.type === filterType;
+    const searchOk = t.category.toLowerCase().includes(searchTerm.toLowerCase())
+                  || t.description.toLowerCase().includes(searchTerm.toLowerCase());
+    return typeOk && searchOk;
   });
 
-  return (
-    <div className="min-h-screen bg-gray-100 p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Transactions</h1>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
-          >
-            {showForm ? 'Cancel' : 'Add Transaction'}
-          </button>
-        </div>
+  // Split categories by type for smarter grouping in dropdown
+  const expenseCats = categories.filter((c) => c.type === 'expense').map((c) => c.name);
+  const incomeCats  = categories.filter((c) => c.type === 'income').map((c) => c.name);
+  const hasCustomCats = categories.length > 0;
 
-        {showForm && (
-          <div className="bg-white rounded-lg shadow p-6 mb-8">
-            <h2 className="text-xl font-bold mb-4">{editingId ? 'Edit Transaction' : 'Add New Transaction'}</h2>
-            <form onSubmit={handleSubmit}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-gray-700 text-sm font-medium mb-2">
-                    Type
-                  </label>
-                  <select
-                    value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="income">Income</option>
-                    <option value="expense">Expense</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-gray-700 text-sm font-medium mb-2">
-                    Category
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-700 text-sm font-medium mb-2">
-                    Amount
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.amount}
-                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-700 text-sm font-medium mb-2">
-                    Date
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+  return (
+    <div className="py-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl font-semibold" style={{ color: 'var(--ink)' }}>Transactions</h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>{transactions.length} total</p>
+        </div>
+        <button
+          onClick={() => { setShowForm(!showForm); if (showForm) handleCancel(); }}
+          className={showForm ? 'btn-secondary' : 'btn-primary'}
+        >
+          {showForm ? 'Discard' : '+ Add Transaction'}
+        </button>
+      </div>
+
+      {/* Form */}
+      {showForm && (
+        <div className="card p-6 mb-6">
+          <h2 className="text-base font-semibold mb-4" style={{ color: 'var(--ink)' }}>
+            {editingId ? 'Edit Transaction' : 'New Transaction'}
+          </h2>
+          <form onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+
+              {/* Type */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'var(--muted)' }}>Type</label>
+                <select
+                  value={formData.type}
+                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                  className="airbnb-select"
+                >
+                  <option value="income">Income</option>
+                  <option value="expense">Expense</option>
+                </select>
               </div>
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-medium mb-2">
-                  Description
+
+              {/* Category — uses user's own categories, grouped */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'var(--muted)' }}>
+                  Category
                 </label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className="airbnb-select"
+                >
+                  {hasCustomCats ? (
+                    <>
+                      {expenseCats.length > 0 && (
+                        <optgroup label="Expense">
+                          {expenseCats.map((c) => <option key={c} value={c}>{c}</option>)}
+                        </optgroup>
+                      )}
+                      {incomeCats.length > 0 && (
+                        <optgroup label="Income">
+                          {incomeCats.map((c) => <option key={c} value={c}>{c}</option>)}
+                        </optgroup>
+                      )}
+                    </>
+                  ) : (
+                    BUILTIN_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)
+                  )}
+                </select>
+                {!hasCustomCats && (
+                  <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
+                    Tip: Create custom categories in the <a href="/categories" style={{ color: 'var(--rausch)' }}>Categories</a> page.
+                  </p>
+                )}
+              </div>
+
+              {/* Amount */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'var(--muted)' }}>Amount ($)</label>
                 <input
-                  type="text"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.amount}
+                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                  placeholder="0.00"
+                  className="airbnb-input"
+                  required
                 />
               </div>
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 bg-blue-500 text-white py-2 rounded-lg font-medium hover:bg-blue-600 disabled:opacity-50"
-                >
-                  {loading ? 'Saving...' : editingId ? 'Update Transaction' : 'Add Transaction'}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  className="flex-1 bg-gray-300 text-gray-800 py-2 rounded-lg font-medium hover:bg-gray-400"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
 
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-gray-700 text-sm font-medium mb-2">Filter by Type</label>
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">All Transactions</option>
-                <option value="income">Income Only</option>
-                <option value="expense">Expense Only</option>
-              </select>
+              {/* Date */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'var(--muted)' }}>Date</label>
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  className="airbnb-input"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-gray-700 text-sm font-medium mb-2">Search</label>
+
+            {/* Description */}
+            <div className="mb-6">
+              <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'var(--muted)' }}>Description</label>
               <input
                 type="text"
-                placeholder="Search by category or description..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="What was this for?"
+                className="airbnb-input"
               />
             </div>
+
+            <div className="flex gap-3">
+              <button type="submit" disabled={loading} className="btn-primary flex-1">
+                {loading ? 'Saving…' : editingId ? 'Update' : 'Add Transaction'}
+              </button>
+              <button type="button" onClick={handleCancel} className="btn-secondary">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Filters */}
+      <div className="card p-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'var(--muted)' }}>Filter by type</label>
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="airbnb-select"
+              style={{ height: 'auto', padding: '8px 12px' }}
+            >
+              <option value="all">All transactions</option>
+              <option value="income">Income only</option>
+              <option value="expense">Expenses only</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'var(--muted)' }}>Search</label>
+            <input
+              type="text"
+              placeholder="Category or description…"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="airbnb-input"
+              style={{ height: 'auto', padding: '8px 12px' }}
+            />
           </div>
         </div>
+      </div>
 
-        {/* Transactions Table */}
-        <div className="bg-white rounded-lg shadow overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+      {/* Table */}
+      <div className="card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full table-auto">
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--hairline)', background: 'var(--surface-soft)' }}>
+                {['Date', 'Category', 'Description', 'Type', 'Amount', 'Actions'].map((h) => (
+                  <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y">
-              {filteredTransactions.map(transaction => (
-                <tr key={transaction._id} className="hover:bg-gray-50 transition">
-                  <td className="px-6 py-4 text-sm text-gray-800">
-                    {new Date(transaction.date).toLocaleDateString()}
+            <tbody>
+              {filtered.map((t) => (
+                <tr key={t._id} style={{ borderBottom: '1px solid var(--hairline-soft)' }}
+                    className="transition-colors hover:bg-surface-soft">
+                  <td className="px-6 py-4 text-sm whitespace-nowrap" style={{ color: 'var(--muted)' }}>
+                    {new Date(t.date).toLocaleDateString()}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-800 font-medium">{transaction.category}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{transaction.description}</td>
-                  <td className="px-6 py-4 text-sm">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      transaction.type === 'income'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {transaction.type}
+                  <td className="px-6 py-4 text-sm font-medium" style={{ color: 'var(--ink)' }}>{t.category}</td>
+                  <td className="px-6 py-4 text-sm max-w-xs truncate" style={{ color: 'var(--ink-body)' }}>{t.description}</td>
+                  <td className="px-6 py-4">
+                    <span className={t.type === 'income' ? 'badge-income' : 'badge-expense'}>
+                      {t.type}
                     </span>
                   </td>
-                  <td className={`px-6 py-4 text-sm font-bold ${
-                    transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toFixed(2)}
+                  <td className="px-6 py-4 text-sm font-semibold whitespace-nowrap"
+                      style={{ color: t.type === 'income' ? '#10b981' : '#ef4444' }}>
+                    {t.type === 'income' ? '+' : '−'}${t.amount.toFixed(2)}
                   </td>
-                  <td className="px-6 py-4 text-sm space-x-2">
-                    <button
-                      onClick={() => handleEdit(transaction)}
-                      className="text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(transaction._id)}
-                      className="text-red-600 hover:text-red-800 font-medium"
-                    >
-                      Delete
-                    </button>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => handleEdit(t)}
+                        className="text-sm font-medium transition-colors"
+                        style={{ color: 'var(--ink)' }}
+                        onMouseEnter={(e) => e.target.style.color = 'var(--rausch)'}
+                        onMouseLeave={(e) => e.target.style.color = 'var(--ink)'}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(t._id)}
+                        className="text-sm font-medium transition-colors"
+                        style={{ color: 'var(--muted)' }}
+                        onMouseEnter={(e) => e.target.style.color = '#ef4444'}
+                        onMouseLeave={(e) => e.target.style.color = 'var(--muted)'}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          
-          {filteredTransactions.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-600">No transactions found</p>
-            </div>
-          )}
         </div>
+
+        {filtered.length === 0 && (
+          <div className="py-12 text-center">
+            <p className="text-sm" style={{ color: 'var(--muted)' }}>
+              {searchTerm || filterType !== 'all' ? 'No matching transactions.' : 'No transactions yet.'}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
